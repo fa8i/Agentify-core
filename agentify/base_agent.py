@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 from openai import AzureOpenAI, RateLimitError, OpenAI
-from client_builder import LLMClientFactory, LLMClientType
+from agentify.client_builder import LLMClientFactory, LLMClientType
 
 
 @dataclass(slots=True)
