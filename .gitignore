@@ -175,5 +175,5 @@ cython_debug/
 .pypirc
 
 # Notebooks
-.ipynb
-.ipynb_checkpoints
+*.ipynb
+*.ipynb_checkpoints
