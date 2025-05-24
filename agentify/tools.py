@@ -18,11 +18,6 @@ get_current_time_schema = {
     },
 }
 
-def get_current_time():
-    now = datetime.datetime.now().astimezone().isoformat()
-    return {"current_time": now}
-
-
 calculate_expression_schema = {
     "name": "calculate_expression",
     "description": "Evalúa una expresión matemática segura y devuelve el resultado.",
@@ -37,6 +32,26 @@ calculate_expression_schema = {
         "required": ["expression"],
     },
 }
+
+get_weather_schema = {
+    "name": "get_weather",
+    "description": "Obtiene el estado del clima actual para una ciudad o zona especificada.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "Nombre de la ciudad o zona para consultar el clima.",
+            }
+        },
+        "required": ["location"],
+    },
+}
+
+
+def get_current_time():
+    now = datetime.datetime.now().astimezone().isoformat()
+    return {"current_time": now}
 
 _allowed_ops = {
     ast.Add: op.add,
@@ -68,22 +83,6 @@ def calculate_expression(expression: str):
         return {"result": result}
     except Exception as e:
         return {"error": f"Expresión inválida: {e}"}
-
-
-get_weather_schema = {
-    "name": "get_weather",
-    "description": "Obtiene el estado del tiempo o clima actual para una ciudad o zona especificada.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "location": {
-                "type": "string",
-                "description": "Nombre de la ciudad o zona para consultar el clima.",
-            }
-        },
-        "required": ["location"],
-    },
-}
 
 def get_weather(location: str):
     api_key = os.getenv("OPENWEATHER_API_KEY")
