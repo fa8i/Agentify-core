@@ -46,17 +46,14 @@ class BaseAgent:
         provider: str,
         client_factory: LLMClientFactory = LLMClientFactory(),
         model_name: str | None = None,
-        temperature: Optional[float] = None,
         tools: List[Tool] | None = None,
         client_config_override: Optional[Dict[str, Any]] = None,
-        agent_timeout: Optional[int] = 30,
-        stream: bool = False,
+        agent_timeout: Optional[int] = 30,        
     ) -> None:
         self.name = name
-        self.system_prompt = system_prompt.strip()
+        self.system_prompt = system_prompt
         self.provider = provider
         self.model_name = model_name
-        self.temperature = temperature
         self._tools: Dict[str, Tool] = {t.name: t for t in tools or []}
         self._tool_defs = [
             {"type": "function", "function": t.schema} for t in self._tools.values()
@@ -69,7 +66,6 @@ class BaseAgent:
         self._history: List[Dict[str, Any]] = [
             {"role": "system", "content": self.system_prompt}
         ]
-        self.stream = stream
 
     @property
     def history(self) -> List[Dict[str, Any]]:
@@ -81,7 +77,7 @@ class BaseAgent:
 
     def add(self, role: str, content: Optional[str], **kwargs: Any) -> None:
         msg: Dict[str, Any] = {"role": role}
-        if content:
+        if content is not None:
             msg["content"] = content
         msg.update(kwargs)
         self._history.append(msg)
@@ -106,7 +102,6 @@ class BaseAgent:
                     messages=self._history,
                     tools=tools_param,
                     tool_choice=tool_choice_param,
-                    temperature=self.temperature
                 )
                 return response.choices[0].message
             except RateLimitError:
@@ -119,7 +114,6 @@ class BaseAgent:
 
         raise RuntimeError(f"{self.client.__class__.__name__} completion failed after retries")
 
-
     def respond(self, user_input: str) -> str:
         self.add("user", user_input)
         assistant_parts: List[str] = []
@@ -130,15 +124,15 @@ class BaseAgent:
                 assistant_parts.append(current_turn_content)
 
             if not msg.tool_calls:
-                if msg.content:
-                    self.add("assistant", msg.content)
+                self.add("assistant", msg.content or "")
                 break
             
-            # Solo añade el mensaje parcial si hay contenido o tool_calls
-            tool_call_message = {
-                "role": "assistant",
-                "content": msg.content,
-                "tool_calls": [
+            content_for_tool_call_message = current_turn_content or " " # evita error en caso de usar Gemini
+            # registrar la llamada parcial
+            self.add(
+                "assistant",
+                content_for_tool_call_message,
+                tool_calls=[
                     {
                         "id": tc.id,
                         "type": "function",
@@ -149,9 +143,7 @@ class BaseAgent:
                     }
                     for tc in msg.tool_calls
                 ],
-            }
-                        
-            self.add(**tool_call_message)
+            )
 
             # ejecutar tools
             for tc in msg.tool_calls:
@@ -170,7 +162,7 @@ class BaseAgent:
         else:
             pass  
 
-        return "\n\n".join(assistant_parts).strip("\n")
+        return "\n\n".join(assistant_parts).lstrip("\n")
     
     def tool_exists(self, name: str) -> bool:
         return name in self._tools
