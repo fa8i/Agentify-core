@@ -11,7 +11,7 @@ ClientBuilder = Callable[[Dict[str, Any], int], LLMClientType]
 
 class LLMClientFactory:
     """Clase para crear clientes LLM para diferentes proveedores."""
-    SUPPORTED_PROVIDERS = ["azure", "openai", "deepseek", "gemini"]
+    SUPPORTED_PROVIDERS = ["azure", "openai", "deepseek", "gemini", "anthropic"]
 
     def __init__(self, default_timeout: int = 30):
         self.default_timeout = default_timeout
@@ -20,6 +20,9 @@ class LLMClientFactory:
             "deepseek": self._create_deepseek_client,
             "gemini": self._create_gemini_client,
             "azure": self._create_azure_client,
+            "anthropic": self._create_anthropic_client,
+            "mistral": self._create_mistral_client,
+            "llama": self._create_llama_client,
         }
 
     def _get_env_or_config(self, key: str, env_var_name: str, config: Dict[str, Any], required: bool = True) -> Optional[str]:
@@ -27,8 +30,7 @@ class LLMClientFactory:
         value = config.get(key, os.getenv(env_var_name))
         if required and not value:
             raise ValueError(
-                f"El parámetro '{key}' (o la variable de entorno '{env_var_name}') "
-                f"es requerido pero no se encontró."
+                f"El parámetro '{key}' (o la variable de entorno '{env_var_name}') es requerido pero no se encontró."
             )
         return value
 
@@ -41,7 +43,37 @@ class LLMClientFactory:
 
     def _create_deepseek_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
         api_key = self._get_env_or_config("api_key", "DEEPSEEK_API_KEY", config)
-        base_url = self._get_env_or_config("base_url", "DEEPSEEK_URL", config)
+        base_url = "https://api.deepseek.com"
+        return OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+        )
+    
+    def _create_anthropic_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
+        api_key = self._get_env_or_config("api_key", "ANTHROPIC_API_KEY", config)
+        base_url = "https://api.anthropic.com/v1/"
+        
+        return OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+        )
+    
+    def _create_mistral_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
+        api_key = self._get_env_or_config("api_key", "MISTRAL_API_KEY", config)
+        base_url = "https://api.mistral.ai/v1"
+        
+        return OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+        )
+    
+    def _create_llama_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
+        api_key = self._get_env_or_config("api_key", "LLAMA_API_KEY", config)
+        base_url = "https://api.llama.com/compat/v1/"
+        
         return OpenAI(
             api_key=api_key,
             base_url=base_url,
@@ -49,9 +81,8 @@ class LLMClientFactory:
         )
 
     def _create_gemini_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
-        # Utilización de Gemini mediante endpoint para el uso de funcrion calling de OpenAI
         api_key = self._get_env_or_config("api_key", "GEMINI_API_KEY", config)
-        base_url = self._get_env_or_config("base_url", "GEMINI_URL", config, required=False)
+        base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
         
         client_args = {"api_key": api_key, "timeout": timeout}
         if base_url:
