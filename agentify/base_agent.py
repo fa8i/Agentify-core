@@ -292,10 +292,21 @@ class BaseAgent:
                     tool_name = tc_original.get("function", {}).get(
                         "name", "unknown_tool"
                     )
-                    args_str = tc_original.get("function", {}).get("arguments", "{}")
+                    args_value = tc_original.get("function", {}).get("arguments")
+                    if args_value is None:
+                        args_str = ""
+                    elif isinstance(args_value, str):
+                        args_str = args_value
+                    else:
+                        args_str = json.dumps(args_value)
                     original_id = tc_original.get(
                         "id", f"gen_id_{uuid.uuid4().hex[:4]}"
                     )
+
+                    if not args_str.strip():
+                        tc_original["function"]["arguments"] = "{}"
+                        expanded_tool_calls.append(tc_original)
+                        continue
 
                     split_args_json = self._split_concatenated_json_objects(args_str)
 
@@ -349,7 +360,14 @@ class BaseAgent:
                     )
                 else:
                     try:
-                        tool_args_str = tc_to_run["function"].get("arguments", "{}")
+                        tool_args_val = tc_to_run["function"].get("arguments")
+                        if tool_args_val is None:
+                            tool_args_str = ""
+                        elif isinstance(tool_args_val, str):
+                            tool_args_str = tool_args_val
+                        else:
+                            tool_args_str = json.dumps(tool_args_val)
+
                         if not tool_args_str.strip():
                             tool_args_str = "{}"
                         parsed_args = json.loads(tool_args_str)
