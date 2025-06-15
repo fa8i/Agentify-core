@@ -1,4 +1,4 @@
-from agentify.base_agent import Tool
+from agentify.core import Tool
 import datetime
 import ast
 import operator as op

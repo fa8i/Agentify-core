@@ -9,8 +9,10 @@ LLMClientType = Union[OpenAI, AzureOpenAI]
 
 ClientBuilder = Callable[[Dict[str, Any], int], LLMClientType]
 
+
 class LLMClientFactory:
     """Clase para crear clientes LLM para diferentes proveedores."""
+
     SUPPORTED_PROVIDERS = ["azure", "openai", "deepseek", "gemini", "anthropic"]
 
     def __init__(self, default_timeout: int = 30):
@@ -25,7 +27,9 @@ class LLMClientFactory:
             "llama": self._create_llama_client,
         }
 
-    def _get_env_or_config(self, key: str, env_var_name: str, config: Dict[str, Any], required: bool = True) -> Optional[str]:
+    def _get_env_or_config(
+        self, key: str, env_var_name: str, config: Dict[str, Any], required: bool = True
+    ) -> Optional[str]:
         """Helper para obtener valor de config_override o variable de entorno."""
         value = config.get(key, os.getenv(env_var_name))
         if required and not value:
@@ -49,31 +53,31 @@ class LLMClientFactory:
             base_url=base_url,
             timeout=timeout,
         )
-    
+
     def _create_anthropic_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
         api_key = self._get_env_or_config("api_key", "ANTHROPIC_API_KEY", config)
         base_url = "https://api.anthropic.com/v1/"
-        
+
         return OpenAI(
             api_key=api_key,
             base_url=base_url,
             timeout=timeout,
         )
-    
+
     def _create_mistral_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
         api_key = self._get_env_or_config("api_key", "MISTRAL_API_KEY", config)
         base_url = "https://api.mistral.ai/v1"
-        
+
         return OpenAI(
             api_key=api_key,
             base_url=base_url,
             timeout=timeout,
         )
-    
+
     def _create_llama_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
         api_key = self._get_env_or_config("api_key", "LLAMA_API_KEY", config)
         base_url = "https://api.llama.com/compat/v1/"
-        
+
         return OpenAI(
             api_key=api_key,
             base_url=base_url,
@@ -83,20 +87,24 @@ class LLMClientFactory:
     def _create_gemini_client(self, config: Dict[str, Any], timeout: int) -> OpenAI:
         api_key = self._get_env_or_config("api_key", "GEMINI_API_KEY", config)
         base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-        
+
         client_args = {"api_key": api_key, "timeout": timeout}
         if base_url:
             client_args["base_url"] = base_url
         else:
-            print("Advertencia: No se proporcionó GEMINI_URL para Gemini. "
-                  "Asumiendo que el SDK de OpenAI lo maneja o no es necesario.")
-        
+            print(
+                "Advertencia: No se proporcionó GEMINI_URL para Gemini. "
+                "Asumiendo que el SDK de OpenAI lo maneja o no es necesario."
+            )
+
         return OpenAI(**client_args)
 
     def _create_azure_client(self, config: Dict[str, Any], timeout: int) -> AzureOpenAI:
         api_key = self._get_env_or_config("api_key", "AZURE_OPENAI_KEY", config)
         api_version = self._get_env_or_config("api_version", "API_VERSION", config)
-        azure_endpoint = self._get_env_or_config("azure_endpoint", "AZURE_OPENAI_ENDPOINT", config)
+        azure_endpoint = self._get_env_or_config(
+            "azure_endpoint", "AZURE_OPENAI_ENDPOINT", config
+        )
         return AzureOpenAI(
             api_key=api_key,
             api_version=api_version,
